@@ -1,0 +1,3 @@
+source_image: "docker.io/library/nginx:latest"
+acr_image_name: nginx-amg
+acr_image_tag: casopractico2

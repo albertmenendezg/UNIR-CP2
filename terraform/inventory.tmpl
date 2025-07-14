@@ -1,0 +1,11 @@
+[localhost]
+localhost ansible_connection=local
+
+[webserver]
+webserver ansible_host=${vm_ip} ansible_user=${vm_admin_username} ansible_ssh_private_key_file=${ssh_key_path}
+
+[all:vars]
+acr_username=${acr_username}
+acr_password=${acr_password}
+acr_name=${acr_name}
+ansible_python_interpreter=/usr/bin/python3

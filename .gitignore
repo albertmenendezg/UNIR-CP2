@@ -1,0 +1,15 @@
+# Terraform files
+*.tfstate.*
+.terraform/
+.terraform.*
+terraform.*
+terraform.tfstate
+
+# Ssh keys
+*.pem
+*.pub
+
+# Ansible
+inventory.ini
+
+.vscode/

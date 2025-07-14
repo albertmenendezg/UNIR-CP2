@@ -1,0 +1,75 @@
+- name: Pull and push image to ACR from localhost
+  hosts: localhost
+  gather_facts: false
+  become: true
+  vars_files:
+    - vars.yml
+
+  tasks:
+    - name: Ensure Python 3 is installed
+      ansible.builtin.package:
+        name: python3
+        state: present
+
+    - name: Ensure Podman is installed
+      ansible.builtin.package:
+        name: podman
+        state: present
+
+    - name: Login to Azure Container Registry
+      containers.podman.podman_login:
+        registry: "{{ acr_name }}.azurecr.io"
+        username: "{{ acr_username }}"
+        password: "{{ acr_password }}"
+
+    - name: Pull nginx image from Docker Hub
+      containers.podman.podman_image:
+        name: "{{ source_image }}"
+        pull: true
+
+    - name: Tag image for ACR
+      containers.podman.podman_tag:
+        image: "{{ source_image }}"
+        target_names:
+          - "{{ acr_name }}.azurecr.io/{{ acr_image_name }}:{{ acr_image_tag }}"
+
+    - name: Push image to ACR
+      containers.podman.podman_image:
+        name: "{{ acr_name }}.azurecr.io/{{ acr_image_name }}:{{ acr_image_tag }}"
+        push: true
+
+- name: Deploy webserver remote VM using image from ACR as a container
+  hosts: webserver
+  gather_facts: false
+  become: true
+  vars_files:
+    - vars.yml
+
+  tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: yes
+
+    - name: Upgrade all packages to the latest version
+      ansible.builtin.apt:
+        upgrade: dist
+
+    - name: Install Podman
+      ansible.builtin.apt:
+        name: podman
+        state: present
+
+    - name: Login to ACR from remote host
+      containers.podman.podman_login:
+        registry: "{{ acr_name }}.azurecr.io"
+        username: "{{ acr_username }}"
+        password: "{{ acr_password }}"
+
+    - name: Run nginx as a container
+      containers.podman.podman_container:
+        name: webserver
+        image: "{{ acr_name }}.azurecr.io/{{ acr_image_name }}:{{ acr_image_tag }}"
+        state: started
+        restart_policy: always
+        publish:
+          - "80:80"
