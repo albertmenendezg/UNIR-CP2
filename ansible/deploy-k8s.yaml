@@ -1,0 +1,18 @@
+- name: Deploy azure-vote app to AKS
+  hosts: localhost
+  connection: local
+  vars:
+    kubeconfig_path: "./kubeconfig.yaml"
+
+  tasks:
+  - name: Apply backend manifests
+    kubernetes.core.k8s:
+      kubeconfig: "{{ kubeconfig_path }}"
+      state: present
+      src: ./k8s/back/
+
+  - name: Apply frontend manifests
+    kubernetes.core.k8s:
+      kubeconfig: "{{ kubeconfig_path }}"
+      state: present
+      src: ./k8s/front/

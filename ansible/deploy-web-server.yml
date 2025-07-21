@@ -1,6 +1,5 @@
-- name: Pull and push image to ACR from localhost
+- name: Pull and push image to ACR
   hosts: localhost
-  gather_facts: false
   become: true
   vars_files:
     - vars.yml
@@ -14,6 +13,7 @@
     - name: Ensure Podman is installed
       ansible.builtin.package:
         name: podman
+        update_cache: true
         state: present
 
     - name: Login to Azure Container Registry
@@ -40,7 +40,6 @@
 
 - name: Deploy webserver remote VM using image from ACR as a container
   hosts: webserver
-  gather_facts: false
   become: true
   vars_files:
     - vars.yml
@@ -52,12 +51,12 @@
 
     - name: Upgrade all packages to the latest version
       ansible.builtin.apt:
-        upgrade: dist
+        state: latest
 
     - name: Install Podman
       ansible.builtin.apt:
         name: podman
-        state: present
+        state: latest
 
     - name: Login to ACR from remote host
       containers.podman.podman_login:

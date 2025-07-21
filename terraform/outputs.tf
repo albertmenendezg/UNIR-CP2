@@ -35,3 +35,7 @@ output "ssh_public_key" {
   sensitive = true
 }
 
+output "aks_cluster_name" {
+  value       = azurerm_kubernetes_cluster.aks_cluster.name
+  description = "The name of the AKS cluster"
+}

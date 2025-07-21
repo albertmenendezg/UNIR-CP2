@@ -35,3 +35,8 @@ variable "acr_name" {
   type    = string
   default = "unircp2amgacr"
 }
+
+variable "aks_cluster_name" {
+  type = string
+  default = "unircp2amg"
+}

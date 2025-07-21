@@ -8,13 +8,5 @@ resource "local_file" "ansible_inventory" {
     acr_name          = azurerm_container_registry.acr.name
     ssh_key_path      = local_file.private_ssh_key.filename
   })
-  filename = "${path.module}/../ansible/inventory.ini"
-}
-
-
-
-resource "local_file" "private_ssh_key" {
-  content         = tls_private_key.ssh_key.private_key_pem
-  filename        = "${path.module}/../ansible/ssh_key.pem"
-  file_permission = "0600"
+  filename = "${path.module}/../ansible/inventory"
 }

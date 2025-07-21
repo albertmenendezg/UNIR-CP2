@@ -1,2 +1,2 @@
 #!/bin/bash
-ansible-playbook -i inventory.ini playbook.yml --ask-become-pass
+ansible-playbook -i inventory deploy-web-server.yml --ask-become-pass
