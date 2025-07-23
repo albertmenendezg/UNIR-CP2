@@ -5,7 +5,7 @@ resource "local_file" "private_ssh_key" {
 }
 
 resource "local_file" "kubeconfig" {
-  content  = azurerm_kubernetes_cluster.aks_cluster.kube_config_raw
-  filename = "${path.module}/../ansible/kubeconfig.yaml"
+  content         = azurerm_kubernetes_cluster.aks_cluster.kube_config_raw
+  filename        = "${path.module}/../ansible/kubeconfig.yaml"
   file_permission = "0600"
 }
