@@ -1,3 +1,12 @@
-source_image: "docker.io/library/nginx:latest"
-acr_image_name: nginx-amg
 acr_image_tag: casopractico2
+ws_image: docker.io/library/nginx:latest
+acr_image_name: nginx-amg
+backend_image_source: docker.io/bitnami/redis:6.0.8
+backend_image_name: vote-app-back
+backend_container_name: backend
+backend_pvc_name: backend-pvc
+frontend_image_source: docker.io/jsosa15/azure-vote-front:v1
+frontend_image_name: vote-app-front
+frontend_container_name: frontend
+kubeconfig_path: ./kubeconfig.yaml
+cluster_namespace: vote-app

@@ -1,0 +1,176 @@
+- name: Deploy azure-vote app and nginx to AKS using ACR
+  hosts: localhost
+  connection: local
+  vars_files:
+    - vars.yml
+
+  tasks:
+    - name: Ensure Podman is installed
+      ansible.builtin.package:
+        name: podman
+        state: present
+
+    - name: Login to ACR via Podman
+      containers.podman.podman_login:
+        registry: "{{ acr_name }}.azurecr.io"
+        username: "{{ acr_username }}"
+        password: "{{ acr_password }}"
+
+    - name: Pull backend image
+      containers.podman.podman_image:
+        name: "{{ backend_image_source }}"
+        pull: true
+
+    - name: Tag backend image
+      containers.podman.podman_tag:
+        image: "{{ backend_image_source }}"
+        target_names:
+          - "{{ acr_name }}.azurecr.io/{{ backend_image_name }}:{{ acr_image_tag }}"
+
+    - name: Push backend image to ACR
+      containers.podman.podman_image:
+        name: "{{ acr_name }}.azurecr.io/{{ backend_image_name }}:{{ acr_image_tag }}"
+        push: true
+
+    - name: Pull frontend image
+      containers.podman.podman_image:
+        name: "{{ frontend_image_source }}"
+        pull: true
+
+    - name: Tag frontend image
+      containers.podman.podman_tag:
+        image: "{{ frontend_image_source }}"
+        target_names:
+          - "{{ acr_name }}.azurecr.io/{{ frontend_image_name }}:{{ acr_image_tag }}"
+
+    - name: Push frontend image to ACR
+      containers.podman.podman_image:
+        name: "{{ acr_name }}.azurecr.io/{{ frontend_image_name }}:{{ acr_image_tag }}"
+        push: true
+
+    - name: Apply namespace
+      kubernetes.core.k8s:
+        kubeconfig: "{{ kubeconfig_path }}"
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: "{{ cluster_namespace }}"
+
+    - name: Aplly PVC
+      kubernetes.core.k8s:
+        kubeconfig: "{{ kubeconfig_path }}"
+        state: present
+        definition:
+          apiVersion: v1
+          kind: PersistentVolumeClaim
+          metadata:
+            name: "{{ backend_pvc_name }}"
+            namespace: "{{ cluster_namespace }}"
+          spec:
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 1Gi
+
+    - name: Apply deployment backend
+      kubernetes.core.k8s:
+        kubeconfig: "{{ kubeconfig_path }}"
+        state: present
+        definition:
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: "{{ backend_container_name }}"
+            namespace: "{{ cluster_namespace }}"
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                app: "{{ backend_container_name }}"
+            template:
+              metadata:
+                labels:
+                  app: "{{ backend_container_name }}"
+              spec:
+                containers:
+                - name: "{{ backend_container_name }}"
+                  image: "{{ acr_name }}.azurecr.io/{{ backend_image_name }}:{{ acr_image_tag }}"
+                  env:
+                  - name: ALLOW_EMPTY_PASSWORD
+                    value: "yes"
+                  ports:
+                  - containerPort: 6379
+                  volumeMounts:
+                  - name: redis-data
+                    mountPath: /bitnami/redis
+                volumes:
+                - name: redis-data
+                  persistentVolumeClaim:
+                    claimName: "{{ backend_pvc_name }}"
+                securityContext:
+                  fsGroup: 1001
+
+    - name: Apply service backend
+      kubernetes.core.k8s:
+        kubeconfig: "{{ kubeconfig_path }}"
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: "{{ backend_container_name }}"
+            namespace: "{{ cluster_namespace }}"
+          spec:
+            ports:
+              - port: 6379
+            selector:
+              app: "{{ backend_container_name }}"
+
+    - name: Apply deployment frontend
+      kubernetes.core.k8s:
+        kubeconfig: "{{ kubeconfig_path }}"
+        state: present
+        definition:
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: "{{ frontend_container_name }}"
+            namespace: "{{ cluster_namespace }}"
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                app: "{{ frontend_container_name }}"
+            template:
+              metadata:
+                labels:
+                  app: "{{ frontend_container_name }}"
+              spec:
+                containers:
+                - name: "{{ frontend_container_name }}"
+                  image: "{{ acr_name }}.azurecr.io/{{ frontend_image_name }}:{{ acr_image_tag }}"
+                  ports:
+                  - containerPort: 80
+                  env:
+                  - name: REDIS
+                    value: "{{ backend_container_name }}"
+
+    - name: Apply service frontend
+      kubernetes.core.k8s:
+        kubeconfig: "{{ kubeconfig_path }}"
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: "{{ frontend_container_name }}"
+            namespace: "{{ cluster_namespace }}"
+          spec:
+            type: LoadBalancer
+            ports:
+              - port: 80
+            selector:
+              app: "{{ frontend_container_name }}"

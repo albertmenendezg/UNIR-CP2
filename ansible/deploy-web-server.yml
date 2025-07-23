@@ -13,23 +13,22 @@
     - name: Ensure Podman is installed
       ansible.builtin.package:
         name: podman
-        update_cache: true
         state: present
 
-    - name: Login to Azure Container Registry
+    - name: Login to ACR via podman
       containers.podman.podman_login:
         registry: "{{ acr_name }}.azurecr.io"
         username: "{{ acr_username }}"
         password: "{{ acr_password }}"
 
-    - name: Pull nginx image from Docker Hub
+    - name: Pull nginx image
       containers.podman.podman_image:
-        name: "{{ source_image }}"
+        name: "{{ ws_image }}"
         pull: true
 
     - name: Tag image for ACR
       containers.podman.podman_tag:
-        image: "{{ source_image }}"
+        image: "{{ ws_image }}"
         target_names:
           - "{{ acr_name }}.azurecr.io/{{ acr_image_name }}:{{ acr_image_tag }}"
 
@@ -58,7 +57,7 @@
         name: podman
         state: latest
 
-    - name: Login to ACR from remote host
+    - name: Login to ACR via podman
       containers.podman.podman_login:
         registry: "{{ acr_name }}.azurecr.io"
         username: "{{ acr_username }}"
