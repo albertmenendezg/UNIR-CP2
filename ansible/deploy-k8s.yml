@@ -58,7 +58,7 @@
           metadata:
             name: "{{ cluster_namespace }}"
 
-    - name: Aplly PVC
+    - name: Apply PVC
       kubernetes.core.k8s:
         kubeconfig: "{{ kubeconfig_path }}"
         state: present

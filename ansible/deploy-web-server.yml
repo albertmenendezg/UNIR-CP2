@@ -26,7 +26,7 @@
         name: "{{ ws_image }}"
         pull: true
 
-    - name: Tag image for ACR
+    - name: Tag image
       containers.podman.podman_tag:
         image: "{{ ws_image }}"
         target_names:
@@ -48,7 +48,7 @@
       ansible.builtin.apt:
         update_cache: yes
 
-    - name: Upgrade all packages to the latest version
+    - name: Upgrade apt packages
       ansible.builtin.apt:
         state: latest
 
